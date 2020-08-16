@@ -37,7 +37,7 @@ namespace KafkaClient.Messages
             destination.WriteString(this.GroupID);
             destination.WriteInt32(this.GroupGenerationID);
             destination.WriteInt64(this.RetentionTimeMs);
-            destination.WriteMany(this.Topics);
+            destination.WriteArray(this.Topics);
         }
 
         public class Topic : IRequest
@@ -55,7 +55,7 @@ namespace KafkaClient.Messages
             public void Write(Stream destination)
             {
                 destination.WriteString(this.Name);
-                destination.WriteMany(this.Partitions);
+                destination.WriteArray(this.Partitions);
             }
         }
 

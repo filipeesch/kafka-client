@@ -38,8 +38,8 @@ namespace KafkaClient.Messages
             destination.WriteByte(this.IsolationLevel);
             destination.WriteInt32(this.SessionID);
             destination.WriteInt32(this.SessionEpoch);
-            destination.WriteMany(this.Topics);
-            destination.WriteMany(this.ForgottenTopics);
+            destination.WriteArray(this.Topics);
+            destination.WriteArray(this.ForgottenTopics);
             destination.WriteString(this.RackID);
         }
 
@@ -52,7 +52,7 @@ namespace KafkaClient.Messages
             public void Write(Stream destination)
             {
                 destination.WriteString(this.Name);
-                destination.WriteMany(this.Partitions);
+                destination.WriteArray(this.Partitions);
             }
         }
 
@@ -87,7 +87,7 @@ namespace KafkaClient.Messages
             public void Write(Stream destination)
             {
                 destination.WriteString(this.Name);
-                destination.WriteManyInt32(this.Partitions);
+                destination.WriteInt32Array(this.Partitions);
             }
         }
     }

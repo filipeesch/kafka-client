@@ -28,7 +28,7 @@ namespace KafkaClient.Messages
             destination.WriteString(this.TransactionalID);
             destination.WriteInt16((short) this.Acks);
             destination.WriteInt32(this.Timeout);
-            destination.WriteMany(this.Topics);
+            destination.WriteArray(this.Topics);
         }
 
         public class Topic : IRequest
@@ -46,7 +46,7 @@ namespace KafkaClient.Messages
             public void Write(Stream destination)
             {
                 destination.WriteString(this.Name);
-                destination.WriteMany(this.Partitions);
+                destination.WriteArray(this.Partitions);
             }
         }
 

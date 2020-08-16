@@ -17,7 +17,7 @@ namespace KafkaClient.Messages
             this.ThrottleTimeMs = source.ReadInt32();
             this.ErrorCode = source.ReadInt16();
             this.SessionID = source.ReadInt32();
-            this.Topics = source.ReadMany<Topic>();
+            this.Topics = source.ReadArray<Topic>();
         }
 
         public class Topic : IResponse
@@ -29,7 +29,7 @@ namespace KafkaClient.Messages
             public void Read(Stream source)
             {
                 this.Name = source.ReadString();
-                this.Partitions = source.ReadMany<Partition>();
+                this.Partitions = source.ReadArray<Partition>();
             }
         }
 
@@ -69,7 +69,7 @@ namespace KafkaClient.Messages
                 this.HighWatermark = source.ReadInt64();
                 this.LastStableOffset = source.ReadInt64();
                 this.LogStartOffset = source.ReadInt64();
-                this.AbortedTransactions = source.ReadMany<AbortedTransaction>();
+                this.AbortedTransactions = source.ReadArray<AbortedTransaction>();
                 this.PreferredReadReplica = source.ReadInt32();
             }
         }

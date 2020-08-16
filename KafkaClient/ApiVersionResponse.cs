@@ -8,7 +8,7 @@ namespace KafkaClient
         public void Read(Stream source)
         {
             this.ErrorCode = source.ReadInt16();
-            this.ApiVersions = source.ReadMany<ApiVersion>();
+            this.ApiVersions = source.ReadArray<ApiVersion>();
         }
 
         public short ErrorCode { get; private set; }

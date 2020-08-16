@@ -10,7 +10,7 @@ namespace KafkaClient.Messages
 
         public void Read(Stream source)
         {
-            this.Topics = source.ReadMany<Topic>();
+            this.Topics = source.ReadArray<Topic>();
             this.ThrottleTimeMs = source.ReadInt32();
         }
 
@@ -23,7 +23,7 @@ namespace KafkaClient.Messages
             public void Read(Stream source)
             {
                 this.Name = source.ReadString();
-                this.Partitions = source.ReadMany<Partition>();
+                this.Partitions = source.ReadArray<Partition>();
             }
         }
 
@@ -48,7 +48,7 @@ namespace KafkaClient.Messages
                 this.Offset = source.ReadInt64();
                 this.LogAppendTime = source.ReadInt64();
                 this.LogStartOffset = source.ReadInt64();
-                this.Errors = source.ReadMany<RecordError>();
+                this.Errors = source.ReadArray<RecordError>();
             }
         }
 

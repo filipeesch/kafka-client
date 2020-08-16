@@ -6,9 +6,9 @@ namespace KafkaClient.Messages
     {
         public void Read(Stream source)
         {
-            this.Brokers = source.ReadMany<BrokerResponse>();
+            this.Brokers = source.ReadArray<BrokerResponse>();
             this.ControllerID = source.ReadInt32();
-            this.TopicsMetadata = source.ReadMany<TopicMetadata>();
+            this.TopicsMetadata = source.ReadArray<TopicMetadata>();
         }
 
         public TopicMetadata[] TopicsMetadata { get; set; }
@@ -32,7 +32,7 @@ namespace KafkaClient.Messages
                 this.ErrorCode = source.ReadInt16();
                 this.Topic = source.ReadString();
                 this.IsInternal = source.ReadBoolean();
-                this.PartitionsMetadata = source.ReadMany<PartitionMetadata>();
+                this.PartitionsMetadata = source.ReadArray<PartitionMetadata>();
             }
         }
 

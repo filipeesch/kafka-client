@@ -44,7 +44,7 @@ namespace KafkaClient
             crcSlice.WriteInt64(this.ProducerId);
             crcSlice.WriteInt16(this.ProducerEpoch);
             crcSlice.WriteInt32(this.BaseSequence);
-            crcSlice.WriteMany(this.Records);
+            crcSlice.WriteArray(this.Records);
 
             var crcBytes = crcSlice.ToArray();
 
@@ -92,7 +92,7 @@ namespace KafkaClient
             this.ProducerId = tmp.ReadInt64();
             this.ProducerEpoch = tmp.ReadInt16();
             this.BaseSequence = tmp.ReadInt32();
-            this.Records = tmp.ReadMany<Record>();
+            this.Records = tmp.ReadArray<Record>();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

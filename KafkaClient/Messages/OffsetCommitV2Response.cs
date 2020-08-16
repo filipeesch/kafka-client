@@ -8,7 +8,7 @@ namespace KafkaClient.Messages
 
         public void Read(Stream source)
         {
-            this.Topics = source.ReadMany<Topic>();
+            this.Topics = source.ReadArray<Topic>();
         }
 
         public class Topic : IResponse
@@ -20,7 +20,7 @@ namespace KafkaClient.Messages
             public void Read(Stream source)
             {
                 this.Name = source.ReadString();
-                this.Partitions = source.ReadMany<Partition>();
+                this.Partitions = source.ReadArray<Partition>();
             }
         }
 

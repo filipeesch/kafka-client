@@ -33,8 +33,20 @@ namespace KafkaClient
             destination.Write(tmp);
         }
 
-        public static void WriteManyInt32(this Stream destination, IEnumerable<int> values)
+        public static void WriteInt32Array(this Stream destination, IReadOnlyCollection<int> values)
         {
+            destination.WriteInt32(values.Count);
+
+            foreach (var value in values)
+            {
+                destination.WriteInt32(value);
+            }
+        }
+
+        public static void WriteInt32CompactArray(this Stream destination, IReadOnlyCollection<int> values)
+        {
+            destination.WriteUVarint((uint) values.Count);
+
             foreach (var value in values)
             {
                 destination.WriteInt32(value);
@@ -53,10 +65,38 @@ namespace KafkaClient
             destination.Write(Encoding.UTF8.GetBytes(value));
         }
 
-        public static void WriteMany<TMessage>(this Stream destination, TMessage[] items)
+        public static void WriteCompactString(this Stream destination, string value)
+        {
+            if (value is null)
+            {
+                destination.WriteUVarint(0);
+                return;
+            }
+
+            destination.WriteUVarint((uint) value.Length + 1u);
+            destination.Write(Encoding.UTF8.GetBytes(value));
+        }
+
+        public static void WriteBoolean(this Stream destination, bool value)
+        {
+            destination.WriteByte((byte) (value ? 1 : 0));
+        }
+
+        public static void WriteArray<TMessage>(this Stream destination, TMessage[] items)
             where TMessage : IRequest
         {
             destination.WriteInt32(items.Length);
+
+            foreach (var item in items)
+            {
+                destination.WriteMessage(item);
+            }
+        }
+
+        public static void WriteCompactArray<TMessage>(this Stream destination, TMessage[] items)
+            where TMessage : IRequest
+        {
+            destination.WriteUVarint((uint) items.Length + 1);
 
             foreach (var item in items)
             {
@@ -111,6 +151,20 @@ namespace KafkaClient
             return Encoding.UTF8.GetString(buffer);
         }
 
+        public static string ReadCompactString(this Stream source)
+        {
+            var size = (int) source.ReadUVarint();
+
+            if (size <= 0)
+            {
+                return null;
+            }
+
+            Span<byte> buffer = stackalloc byte[size - 1];
+            source.Read(buffer);
+            return Encoding.UTF8.GetString(buffer);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TMessage ReadMessage<TMessage>(this Stream source)
             where TMessage : class, IResponse, new()
@@ -120,7 +174,7 @@ namespace KafkaClient
             return message;
         }
 
-        public static TMessage[] ReadMany<TMessage>(this Stream source) where TMessage : class, IResponse, new() =>
+        public static TMessage[] ReadArray<TMessage>(this Stream source) where TMessage : class, IResponse, new() =>
             source.ReadMany<TMessage>(source.ReadInt32());
 
         public static TMessage[] ReadMany<TMessage>(this Stream source, int count) where TMessage : class, IResponse, new()
@@ -152,33 +206,18 @@ namespace KafkaClient
             return result;
         }
 
-        // public static int ReadVarint(this Stream source)
-        // {
-        //     const int endMask = 0b1000_0000;
-        //     const int valueMask = 0b0111_1111;
-        //
-        //     var shift = 0;
-        //     var result = 0;
-        //
-        //     for (var i = 0; i < sizeof(int); i++)
-        //     {
-        //         var byteValue = source.ReadByte();
-        //
-        //         var value = byteValue & valueMask;
-        //         result |= value << shift;
-        //
-        //         if ((byteValue & endMask) != endMask)
-        //         {
-        //             return result;
-        //         }
-        //
-        //         shift += 7;
-        //     }
-        //
-        //     return 0;
-        // }
         public static int ReadVarint(this Stream source)
         {
+            var num = source.ReadUVarint();
+
+            return (int) (num >> 1) ^ -(int) (num & 1);
+        }
+
+        public static uint ReadUVarint(this Stream source)
+        {
+            const int endMask = 0b1000_0000;
+            const int valueMask = 0b0111_1111;
+
             var num = 0;
             var shift = 0;
             int current;
@@ -186,38 +225,20 @@ namespace KafkaClient
             do
             {
                 current = source.ReadByte();
-                num |= (current & 0x7f) << shift;
+                num |= (current & valueMask) << shift;
                 shift += 7;
-            } while ((current & 0x80) != 0);
+            } while ((current & endMask) != 0);
 
-            return (num >> 1) ^ -(num & 1);
+            return (uint) num;
         }
 
-        // public static void WriteVarint(this Stream destination, int value)
-        // {
-        //     const int endMask = 0b1000_0000;
-        //     const int valueMask = 0b0111_1111;
-        //     
-        //     do
-        //     {
-        //         var byteVal = value & valueMask;
-        //         value >>= 7;
-        //
-        //         if (value != 0)
-        //         {
-        //             byteVal |= endMask;
-        //         }
-        //
-        //         destination.WriteByte((byte) byteVal);
-        //     } while (value != 0);
-        // }
+        public static void WriteVarint(this Stream destination, long num) =>
+            destination.WriteUVarint(((ulong) num << 1) ^ ((ulong) num >> 63));
 
-        public static void WriteVarint(this Stream destination, long num)
+        public static void WriteUVarint(this Stream destination, ulong num)
         {
-            const long endMask = 0b1000_0000;
-            const long valueMask = 0b0111_1111;
-
-            num = (num << 1) ^ (num >> 63);
+            const ulong endMask = 0b1000_0000;
+            const ulong valueMask = 0b0111_1111;
 
             do
             {
@@ -226,8 +247,5 @@ namespace KafkaClient
                 num >>= 7;
             } while (num != 0);
         }
-
-        // public static void WriteVarint(this Stream destination, long num) =>
-        //     destination.WriteVarint(Convert.ToUInt64((num << 1) ^ (num >> 63)));
     }
 }
