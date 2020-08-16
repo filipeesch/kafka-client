@@ -2,7 +2,7 @@ namespace KafkaClient
 {
     using System.IO;
 
-    public interface IResponseMessage
+    public interface IResponse
     {
         void Read(Stream source);
     }

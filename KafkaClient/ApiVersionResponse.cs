@@ -3,7 +3,7 @@ namespace KafkaClient
     using System.Collections.Generic;
     using System.IO;
 
-    public class ApiVersionResponse : IResponseMessage
+    public class ApiVersionResponse : IResponse
     {
         public void Read(Stream source)
         {

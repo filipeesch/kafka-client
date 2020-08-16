@@ -2,7 +2,7 @@ namespace KafkaClient
 {
     using System.IO;
 
-    public class BrokerResponse : IResponseMessage
+    public class BrokerResponse : IResponse
     {
         public int NodeId { get; private set; }
 

@@ -2,7 +2,7 @@ namespace KafkaClient
 {
     using System.IO;
 
-    public class ApiVersion : IResponseMessage
+    public class ApiVersion : IResponse
     {
         public short ApiKey { get; private set; }
 

@@ -2,7 +2,7 @@ namespace KafkaClient
 {
     using System.IO;
 
-    public class TopicMetadata : IResponseMessage
+    public class TopicMetadata : IResponse
     {
         public short ErrorCode { get; private set; }
 

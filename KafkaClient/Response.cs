@@ -18,9 +18,9 @@ namespace KafkaClient
 
         public int CorrelationID { get; }
 
-        public IResponseMessage CreateMessage(Type responseType)
+        public IResponse CreateMessage(Type responseType)
         {
-            var message = (IResponseMessage) Activator.CreateInstance(responseType);
+            var message = (IResponse) Activator.CreateInstance(responseType);
 
             using var ms = new MemoryStream(this.payload);
             message.Read(ms);

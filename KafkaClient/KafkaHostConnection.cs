@@ -18,9 +18,11 @@ namespace KafkaClient
         private readonly Task listenerTask;
 
         private readonly CancellationTokenSource stopTokenSource = new CancellationTokenSource();
+        private readonly string cliendID;
 
-        public KafkaHostConnection(string host, int port)
+        public KafkaHostConnection(string host, int port, string cliendID)
         {
+            this.cliendID = cliendID;
             this.client = new TcpClient(host, port);
             this.stream = this.client.GetStream();
 
@@ -49,7 +51,7 @@ namespace KafkaClient
         }
 
         public Task<TResponse> SendAsync<TResponse>(IRequestMessage<TResponse> request, TimeSpan timeout)
-            where TResponse : IResponseMessage, new()
+            where TResponse : IResponse, new()
         {
             var pendindRequest = new PendindRequest(timeout, typeof(TResponse));
 
@@ -59,7 +61,7 @@ namespace KafkaClient
             this.stream.WriteMessage(
                 new Request(
                     correlationId,
-                    null,
+                    this.cliendID,
                     request));
 
             return pendindRequest.GetTask<TResponse>();
@@ -82,8 +84,8 @@ namespace KafkaClient
 
             public Type ResponseType { get; }
 
-            public readonly TaskCompletionSource<IResponseMessage> CompletionSource =
-                new TaskCompletionSource<IResponseMessage>();
+            public readonly TaskCompletionSource<IResponse> CompletionSource =
+                new TaskCompletionSource<IResponse>();
 
             public PendindRequest(TimeSpan timeout, Type responseType)
             {
@@ -91,7 +93,7 @@ namespace KafkaClient
                 this.ResponseType = responseType;
             }
 
-            public Task<TResponse> GetTask<TResponse>() where TResponse : IResponseMessage =>
+            public Task<TResponse> GetTask<TResponse>() where TResponse : IResponse =>
                 this.CompletionSource.Task.ContinueWith(x => (TResponse) x.Result);
         }
     }

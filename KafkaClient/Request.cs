@@ -21,7 +21,7 @@ namespace KafkaClient
 
         public void Write(Stream destination)
         {
-            using var tmp = new MemoryStream();
+            using var tmp = new MemoryStream(1024 * 4);
 
             tmp.WriteInt16((short) this.Message.ApiKey);
             tmp.WriteInt16(this.Message.ApiVersion);

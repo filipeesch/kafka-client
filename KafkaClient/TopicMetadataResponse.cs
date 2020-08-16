@@ -2,7 +2,7 @@ namespace KafkaClient
 {
     using System.IO;
 
-    public class TopicMetadataResponse : IResponseMessage
+    public class TopicMetadataResponse : IResponse
     {
         public void Read(Stream source)
         {
