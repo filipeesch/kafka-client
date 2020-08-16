@@ -11,6 +11,10 @@ namespace KafkaClient
             this.Topics = topics;
         }
 
+        public ApiKey ApiKey => ApiKey.Produce;
+
+        public short ApiVersion => 8;
+
         public string TransactionalID { get; } = null;
 
         public ProduceAcks Acks { get; }
@@ -18,10 +22,6 @@ namespace KafkaClient
         public int Timeout { get; }
 
         public Topic[] Topics { get; }
-
-        public ApiKey ApiKey => ApiKey.Produce;
-
-        public short ApiVersion => 8;
 
         public void Write(Stream destination)
         {

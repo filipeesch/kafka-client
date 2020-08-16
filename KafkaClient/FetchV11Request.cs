@@ -27,7 +27,7 @@ namespace KafkaClient
 
         public ForgottenTopic[] ForgottenTopics { get; set; } = Array.Empty<ForgottenTopic>();
 
-        public string RackID { get; set; }
+        public string RackID { get; set; } = string.Empty;
 
         public void Write(Stream destination)
         {

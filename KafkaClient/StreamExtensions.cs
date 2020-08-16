@@ -190,7 +190,7 @@ namespace KafkaClient
                 shift += 7;
             } while ((current & 0x80) != 0);
 
-            return num >> 1;
+            return (num >> 1) ^ -(num & 1);
         }
 
         // public static void WriteVarint(this Stream destination, int value)
@@ -217,9 +217,12 @@ namespace KafkaClient
             const long endMask = 0b1000_0000;
             const long valueMask = 0b0111_1111;
 
+            num = (num << 1) ^ (num >> 63);
+
             do
             {
-                destination.WriteByte((byte) ((num & valueMask) | (num > valueMask ? endMask : 0)));
+                var value = (byte) ((num & valueMask) | (num > valueMask ? endMask : 0));
+                destination.WriteByte(value);
                 num >>= 7;
             } while (num != 0);
         }

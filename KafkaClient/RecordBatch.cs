@@ -4,7 +4,6 @@ namespace KafkaClient
     using System.IO;
     using System.Runtime.CompilerServices;
     using System.Text;
-    using System.Threading.Tasks;
     using Crc32C;
 
     public class RecordBatch : IRequest, IResponse
@@ -19,7 +18,7 @@ namespace KafkaClient
 
         public int CRC { get; private set; }
 
-        public byte[] Attributes { get; private set; } = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        public short Attributes { get; private set; } = 0;
 
         public int LastOffsetDelta { get; set; }
 
@@ -27,30 +26,25 @@ namespace KafkaClient
 
         public long MaxTimestamp { get; set; }
 
-        public long ProducerId { get; private set; } = 0;
+        public long ProducerId { get; private set; } = -1;
 
-        public short ProducerEpoch { get; private set; } = 0;
+        public short ProducerEpoch { get; private set; } = -1;
 
-        public int BaseSequence { get; private set; } = 0;
+        public int BaseSequence { get; private set; } = -1;
 
         public Record[] Records { get; set; } = Array.Empty<Record>();
 
         public void Write(Stream destination)
         {
             using var crcSlice = new MemoryStream(1024 * 4);
-            crcSlice.Write(this.Attributes);
+            crcSlice.WriteInt16(this.Attributes);
             crcSlice.WriteInt32(this.LastOffsetDelta);
             crcSlice.WriteInt64(this.FirstTimestamp);
             crcSlice.WriteInt64(this.MaxTimestamp);
             crcSlice.WriteInt64(this.ProducerId);
             crcSlice.WriteInt16(this.ProducerEpoch);
             crcSlice.WriteInt32(this.BaseSequence);
-
-            crcSlice.WriteInt32(this.Records.Length);
-            foreach (var record in this.Records)
-            {
-                crcSlice.WriteMessage(record);
-            }
+            crcSlice.WriteMany(this.Records);
 
             var crcBytes = crcSlice.ToArray();
 
@@ -81,7 +75,7 @@ namespace KafkaClient
             this.Magic = (byte) tmp.ReadByte();
             this.CRC = tmp.ReadInt32();
 
-            var crc = Crc32CAlgorithm.Compute(
+            var crc = (int) Crc32CAlgorithm.Compute(
                 data,
                 8 + 4 + 4 + 1 + 4,
                 this.BatchLength - 4 - 1 - 4);
@@ -91,7 +85,7 @@ namespace KafkaClient
                 throw new Exception("Corrupt message");
             }
 
-            this.Attributes = tmp.ReadBytes(2);
+            this.Attributes = tmp.ReadInt16();
             this.LastOffsetDelta = tmp.ReadInt32();
             this.FirstTimestamp = tmp.ReadInt64();
             this.MaxTimestamp = tmp.ReadInt64();
@@ -114,7 +108,7 @@ namespace KafkaClient
         {
             public int Length { get; private set; }
 
-            public byte Attributes { get; set; } = 0;
+            public byte Attributes { get; private set; } = 0;
 
             public int TimestampDelta { get; set; }
 
@@ -130,7 +124,7 @@ namespace KafkaClient
             {
                 using var tmp = new MemoryStream(1024);
 
-                tmp.WriteInt16(this.Attributes);
+                tmp.WriteByte(this.Attributes);
                 tmp.WriteVarint(this.TimestampDelta);
                 tmp.WriteVarint(this.OffsetDelta);
 
