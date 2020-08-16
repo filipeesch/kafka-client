@@ -1,9 +1,9 @@
 ﻿namespace KafkaClient
 {
     using System;
-    using System.IO;
     using System.Text;
     using System.Threading.Tasks;
+    using KafkaClient.Messages;
 
     class Program
     {
@@ -19,7 +19,7 @@
                 TimeSpan.FromSeconds(30));
 
             var topicMetadata = await connection.SendAsync(
-                new TopicMetadataRequest(new[] { "test-topic", "test-gzip", "test-json" }),
+                new TopicMetadataV1Request(new[] { "test-topic", "test-gzip", "test-json" }),
                 TimeSpan.FromSeconds(30));
 
             var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();

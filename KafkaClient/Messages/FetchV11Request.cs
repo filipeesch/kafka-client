@@ -1,4 +1,4 @@
-namespace KafkaClient
+namespace KafkaClient.Messages
 {
     using System;
     using System.IO;

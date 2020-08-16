@@ -1,14 +1,18 @@
-namespace KafkaClient
+namespace KafkaClient.Messages
 {
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
 
-    public class TopicMetadataRequest : IRequestMessage<TopicMetadataResponse>
+    public class TopicMetadataV1Request : IRequestMessage<TopicMetadataV1Response>
     {
+        public ApiKey ApiKey => ApiKey.Metadata;
+
+        public short ApiVersion => 1;
+
         public string[] Topics { get; }
 
-        public TopicMetadataRequest(IEnumerable<string> topics)
+        public TopicMetadataV1Request(IEnumerable<string> topics)
         {
             this.Topics = topics.ToArray();
         }
@@ -22,9 +26,5 @@ namespace KafkaClient
                 destination.WriteString(topic);
             }
         }
-
-        public ApiKey ApiKey => ApiKey.Metadata;
-
-        public short ApiVersion => 1;
     }
 }
