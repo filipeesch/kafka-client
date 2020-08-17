@@ -33,6 +33,13 @@
                 new FindCoordinatorV3Request(string.Empty, 0),
                 TimeSpan.FromSeconds(30));
 
+            var heartbeatResponse = await connection.SendAsync(
+                new HeartbeatV4Request(
+                    "print-console-handler",
+                    0,
+                    "test-id"),
+                TimeSpan.FromSeconds(30));
+
             var offsetFetchResponse = await connection.SendAsync(
                 new OffsetFetchV5Request(
                     "print-console-handler",
