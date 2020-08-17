@@ -1,6 +1,7 @@
 ﻿namespace KafkaClient
 {
     using System;
+    using System.IO;
     using System.Text;
     using System.Threading.Tasks;
     using KafkaClient.Messages;
@@ -21,7 +22,11 @@
                 TimeSpan.FromSeconds(30));
 
             var topicMetadata = await connection.SendAsync(
-                new TopicMetadataV1Request(new[] { "test-topic", "test-gzip", "test-json" }),
+                new TopicMetadataV9Request(
+                    new[] { new TopicMetadataV9Request.Topic("test-topic") },
+                    false,
+                    true,
+                    true),
                 TimeSpan.FromSeconds(30));
 
             var offsetFetchResponse = await connection.SendAsync(

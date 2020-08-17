@@ -1,6 +1,12 @@
 namespace KafkaClient
 {
+    using KafkaClient.Messages;
+
     public interface IRequestMessage<TResponse> : IRequestMessage where TResponse : IResponse
+    {
+    }
+
+    public interface IRequestMessageV2<TResponse> : IRequestMessage<TResponse>, IRequestV2 where TResponse : IResponseV2
     {
     }
 

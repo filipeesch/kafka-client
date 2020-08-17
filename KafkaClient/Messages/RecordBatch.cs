@@ -168,7 +168,7 @@ namespace KafkaClient
                 this.OffsetDelta = source.ReadVarint();
                 this.Key = source.ReadBytes(source.ReadVarint());
                 this.Value = source.ReadBytes(source.ReadVarint());
-                this.Headers = source.ReadMany<Header>(source.ReadVarint());
+                this.Headers = source.ReadArray<Header>(source.ReadVarint());
             }
         }
 

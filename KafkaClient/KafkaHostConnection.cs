@@ -2,6 +2,8 @@ namespace KafkaClient
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Diagnostics;
+    using System.IO;
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
@@ -13,7 +15,7 @@ namespace KafkaClient
 
         private readonly ConcurrentDictionary<int, PendindRequest> pendindRequests = new ConcurrentDictionary<int, PendindRequest>();
 
-        private int correlationID;
+        private int lastCorrelationID;
 
         private readonly Task listenerTask;
 
@@ -41,11 +43,24 @@ namespace KafkaClient
                     await Task.Delay(100).ConfigureAwait(false);
                 }
 
-                var response = new Response(this.stream);
+                var messageSize = this.stream.ReadInt32();
 
-                if (this.pendindRequests.TryRemove(response.CorrelationID, out var request))
+                var tmp = new byte[messageSize];
+                this.stream.Read(tmp);
+
+                using var payload = new MemoryStream(tmp);
+                var correlationID = payload.ReadInt32();
+
+                if (this.pendindRequests.TryRemove(correlationID, out var request))
                 {
-                    request.CompletionSource.TrySetResult(response.CreateMessage(request.ResponseType));
+                    var message = (IResponse) Activator.CreateInstance(request.ResponseType);
+
+                    if (message is IResponseV2)
+                        _ = payload.ReadTaggedFields();
+
+                    message.Read(payload);
+
+                    request.CompletionSource.TrySetResult(message);
                 }
             }
         }
@@ -53,21 +68,23 @@ namespace KafkaClient
         public Task<TResponse> SendAsync<TResponse>(IRequestMessage<TResponse> request, TimeSpan timeout)
             where TResponse : IResponse, new()
         {
-            var pendindRequest = new PendindRequest(timeout, typeof(TResponse));
+            var pendindRequest = new PendindRequest(
+                timeout,
+                typeof(TResponse));
 
-            var correlationId = this.NewCorrelationID();
-            this.pendindRequests.TryAdd(correlationId, pendindRequest);
+            lock (this.stream)
+            {
+                this.pendindRequests.TryAdd(++this.lastCorrelationID, pendindRequest);
 
-            this.stream.WriteMessage(
-                new Request(
-                    correlationId,
-                    this.cliendID,
-                    request));
+                this.stream.WriteMessage(
+                    new Request(
+                        this.lastCorrelationID,
+                        this.cliendID,
+                        request));
+            }
 
             return pendindRequest.GetTask<TResponse>();
         }
-
-        private int NewCorrelationID() => Interlocked.Increment(ref this.correlationID);
 
         public void Dispose()
         {
