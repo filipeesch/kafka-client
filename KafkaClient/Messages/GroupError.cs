@@ -8,5 +8,6 @@ namespace KafkaClient.Messages
         UnknownMemberId = 25,
         InvalidSessionTimeout = 26,
         RebalanceInProgress = 27,
+        MemberIdRequired = 79,
     }
 }

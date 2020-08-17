@@ -60,9 +60,9 @@ namespace KafkaClient.Messages
                 this.ID = source.ReadInt32();
                 this.LeaderID = source.ReadInt32();
                 this.LeaderEpoch = source.ReadInt32();
-                this.ReplicaNodes = source.ReadInt32CompactArray();
-                this.IsrNodes = source.ReadInt32CompactArray();
-                this.OfflineReplicas = source.ReadInt32CompactArray();
+                this.ReplicaNodes = source.ReadCompactInt32Array();
+                this.IsrNodes = source.ReadCompactInt32Array();
+                this.OfflineReplicas = source.ReadCompactInt32Array();
                 this.TaggedFields = source.ReadTaggedFields();
             }
         }

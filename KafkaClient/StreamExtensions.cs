@@ -42,7 +42,7 @@ namespace KafkaClient
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteInt32CompactArray(this Stream destination, IReadOnlyList<int> values)
+        public static void WriteCompactInt32Array(this Stream destination, IReadOnlyList<int> values)
         {
             destination.WriteUVarint((uint) values.Count);
             InternalWriteInt32Array(destination, values);
@@ -77,7 +77,7 @@ namespace KafkaClient
             destination.Write(Encoding.UTF8.GetBytes(value));
         }
 
-        public static void WriteCompactString(this Stream destination, string value)
+        public static void WriteCompactString(this Stream destination, string? value)
         {
             if (value is null)
             {
@@ -87,6 +87,18 @@ namespace KafkaClient
 
             destination.WriteUVarint((uint) value.Length + 1u);
             destination.Write(Encoding.UTF8.GetBytes(value));
+        }
+
+        public static void WriteCompactByteArray(this Stream destination, byte[]? data)
+        {
+            if (data is null)
+            {
+                destination.WriteUVarint(0);
+                return;
+            }
+
+            destination.WriteUVarint((uint) data.Length + 1u);
+            destination.Write(data);
         }
 
         public static void WriteBoolean(this Stream destination, bool value)
@@ -187,6 +199,16 @@ namespace KafkaClient
             return Encoding.UTF8.GetString(buffer);
         }
 
+        public static byte[] ReadCompactByteArray(this Stream source)
+        {
+            var size = source.ReadUVarint();
+
+            if (size <= 0)
+                return null;
+
+            return source.ReadBytes(size - 1);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TMessage ReadMessage<TMessage>(this Stream source)
             where TMessage : class, IResponse, new()
@@ -246,7 +268,7 @@ namespace KafkaClient
         public static int[] ReadInt32Array(this Stream source) => source.ReadInt32Array(source.ReadInt32());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int[] ReadInt32CompactArray(this Stream source) => source.ReadInt32Array(source.ReadUVarint() - 1);
+        public static int[] ReadCompactInt32Array(this Stream source) => source.ReadInt32Array(source.ReadUVarint() - 1);
 
         public static int[] ReadInt32Array(this Stream source, int count)
         {
@@ -258,7 +280,7 @@ namespace KafkaClient
 
             var result = new int[count];
 
-            for (var i = 0; i < count; i++)
+            for (var i = 0; i < count; ++i)
             {
                 result[i] = source.ReadInt32();
             }

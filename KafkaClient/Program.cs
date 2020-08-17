@@ -1,7 +1,6 @@
 ﻿namespace KafkaClient
 {
     using System;
-    using System.IO;
     using System.Text;
     using System.Threading.Tasks;
     using KafkaClient.Messages;
@@ -10,10 +9,13 @@
     {
         static async Task Main(string[] args)
         {
+            var memberId = Guid.NewGuid().ToString();
+            const string groupId = "print-console-handler";
+
             var connection = new KafkaHostConnection(
                 "localhost",
                 9092,
-                "test_client");
+                "test-client-id");
 
             var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
@@ -33,16 +35,39 @@
                 new FindCoordinatorV3Request(string.Empty, 0),
                 TimeSpan.FromSeconds(30));
 
+            var joinGroupResponse = await connection.SendAsync(
+                new JoinGroupV7Request(
+                    "print-console-handler",
+                    300000,
+                    3000,
+                    string.Empty,
+                    null,
+                    "consumer",
+                    new[] { new JoinGroupV7Request.Protocol("consumer", Array.Empty<byte>()), }),
+                TimeSpan.FromSeconds(30));
+
+            var joinGroupResponse1 = await connection.SendAsync(
+                new JoinGroupV7Request(
+                    "print-console-handler",
+                    300000,
+                    3000,
+                    joinGroupResponse.MemberId,
+                    null,
+                    "consumer",
+                    new[] { new JoinGroupV7Request.Protocol("consumer", Array.Empty<byte>()), }),
+                TimeSpan.FromSeconds(30));
+
+
             var heartbeatResponse = await connection.SendAsync(
                 new HeartbeatV4Request(
-                    "print-console-handler",
+                    groupId,
                     0,
-                    "test-id"),
+                    memberId),
                 TimeSpan.FromSeconds(30));
 
             var offsetFetchResponse = await connection.SendAsync(
                 new OffsetFetchV5Request(
-                    "print-console-handler",
+                    groupId,
                     new[]
                     {
                         new OffsetFetchV5Request.Topic(
