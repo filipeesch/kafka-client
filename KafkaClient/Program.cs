@@ -29,6 +29,10 @@
                     true),
                 TimeSpan.FromSeconds(30));
 
+            var findCoordResponse = await connection.SendAsync(
+                new FindCoordinatorV3Request(string.Empty, 0),
+                TimeSpan.FromSeconds(30));
+
             var offsetFetchResponse = await connection.SendAsync(
                 new OffsetFetchV5Request(
                     "print-console-handler",

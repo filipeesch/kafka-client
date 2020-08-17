@@ -34,30 +34,26 @@ namespace KafkaClient
             destination.Write(tmp);
         }
 
-        public static void WriteInt32Array(this Stream destination, IReadOnlyCollection<int> values)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteInt32Array(this Stream destination, IReadOnlyList<int> values)
         {
             destination.WriteInt32(values.Count);
-
-            foreach (var value in values)
-            {
-                destination.WriteInt32(value);
-            }
-        }
-
-        public static void WriteInt32CompactArray(this Stream destination, IReadOnlyCollection<int> values)
-        {
-            destination.WriteUVarint((uint) values.Count);
-
-            foreach (var value in values)
-            {
-                destination.WriteInt32(value);
-            }
+            InternalWriteInt32Array(destination, values);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteEmptyTaggedFields(this Stream destination)
+        public static void WriteInt32CompactArray(this Stream destination, IReadOnlyList<int> values)
         {
-            destination.WriteUVarint(0);
+            destination.WriteUVarint((uint) values.Count);
+            InternalWriteInt32Array(destination, values);
+        }
+
+        private static void InternalWriteInt32Array(Stream destination, IReadOnlyList<int> values)
+        {
+            for (var i = 0; i < values.Count; ++i)
+            {
+                destination.WriteInt32(values[i]);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
