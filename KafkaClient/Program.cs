@@ -20,7 +20,7 @@
             var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var apiVersion = await connection.SendAsync(
-                new ApiVersionRequest(),
+                new ApiVersionV2Request(),
                 TimeSpan.FromSeconds(30));
 
             var topicMetadata = await connection.SendAsync(
