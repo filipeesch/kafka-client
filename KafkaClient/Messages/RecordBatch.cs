@@ -1,6 +1,7 @@
 namespace KafkaClient
 {
     using System;
+    using System.Buffers;
     using System.IO;
     using System.Runtime.CompilerServices;
     using System.Text;
@@ -66,33 +67,41 @@ namespace KafkaClient
             if (size == 0)
                 return;
 
-            var data = source.ReadBytes(size);
+            var data = ArrayPool<byte>.Shared.Rent(size);
 
-            using var tmp = new MemoryStream(data);
-            this.BaseOffset = tmp.ReadInt64();
-            this.BatchLength = tmp.ReadInt32();
-            this.PartitionLeaderEpoch = tmp.ReadInt32();
-            this.Magic = (byte) tmp.ReadByte();
-            this.Crc = tmp.ReadInt32();
-
-            var crc = (int) Crc32CAlgorithm.Compute(
-                data,
-                8 + 4 + 4 + 1 + 4,
-                this.BatchLength - 4 - 1 - 4);
-
-            if (crc != this.Crc)
+            try
             {
-                throw new Exception("Corrupt message");
-            }
+                source.Read(data, 0, size);
+                using var tmp = new MemoryStream(data, 0, size);
+                this.BaseOffset = tmp.ReadInt64();
+                this.BatchLength = tmp.ReadInt32();
+                this.PartitionLeaderEpoch = tmp.ReadInt32();
+                this.Magic = (byte) tmp.ReadByte();
+                this.Crc = tmp.ReadInt32();
 
-            this.Attributes = tmp.ReadInt16();
-            this.LastOffsetDelta = tmp.ReadInt32();
-            this.FirstTimestamp = tmp.ReadInt64();
-            this.MaxTimestamp = tmp.ReadInt64();
-            this.ProducerId = tmp.ReadInt64();
-            this.ProducerEpoch = tmp.ReadInt16();
-            this.BaseSequence = tmp.ReadInt32();
-            this.Records = tmp.ReadArray<Record>();
+                var crc = (int) Crc32CAlgorithm.Compute(
+                    data,
+                    8 + 4 + 4 + 1 + 4,
+                    this.BatchLength - 4 - 1 - 4);
+
+                if (crc != this.Crc)
+                {
+                    throw new Exception("Corrupt message");
+                }
+
+                this.Attributes = tmp.ReadInt16();
+                this.LastOffsetDelta = tmp.ReadInt32();
+                this.FirstTimestamp = tmp.ReadInt64();
+                this.MaxTimestamp = tmp.ReadInt64();
+                this.ProducerId = tmp.ReadInt64();
+                this.ProducerEpoch = tmp.ReadInt16();
+                this.BaseSequence = tmp.ReadInt32();
+                this.Records = tmp.ReadArray<Record>();
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(data);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -122,7 +131,7 @@ namespace KafkaClient
 
             public void Write(Stream destination)
             {
-                using var tmp = new MemoryStream(1024);
+                using var tmp = MemoryStreamFactory.GetStream();
 
                 tmp.WriteByte(this.Attributes);
                 tmp.WriteVarint(this.TimestampDelta);

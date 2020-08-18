@@ -3,6 +3,7 @@ namespace KafkaClient
     using System;
     using System.IO;
     using KafkaClient.Messages;
+    using Microsoft.IO;
 
     public class Request : IRequest
     {
@@ -23,7 +24,7 @@ namespace KafkaClient
 
         public void Write(Stream destination)
         {
-            using var tmp = new MemoryStream(1024 * 4);
+            using var tmp = MemoryStreamFactory.GetStream();
 
             tmp.WriteInt16((short) this.Message.ApiKey);
             tmp.WriteInt16(this.Message.ApiVersion);

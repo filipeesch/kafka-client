@@ -1,8 +1,8 @@
 namespace KafkaClient
 {
     using System;
+    using System.Buffers;
     using System.Collections.Concurrent;
-    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Net.Sockets;
     using System.Threading;
@@ -13,94 +13,95 @@ namespace KafkaClient
         private readonly TcpClient client;
         private readonly NetworkStream stream;
 
-        private readonly ConcurrentDictionary<int, PendindRequest> pendindRequests = new ConcurrentDictionary<int, PendindRequest>();
+        private readonly ConcurrentDictionary<int, PendingRequest> pendingRequests = new ConcurrentDictionary<int, PendingRequest>();
 
         private int lastCorrelationId;
 
-        private readonly Task listenerTask;
+        private readonly Timer listenerTimer;
 
-        private readonly CancellationTokenSource stopTokenSource = new CancellationTokenSource();
-        private readonly string cliendId;
+        private readonly string clientId;
 
-        public KafkaHostConnection(string host, int port, string cliendId)
+        public KafkaHostConnection(string host, int port, string clientId)
         {
-            this.cliendId = cliendId;
+            this.clientId = clientId;
             this.client = new TcpClient(host, port);
             this.stream = this.client.GetStream();
 
-            this.listenerTask = Task.Run(this.ListenStream);
+            this.listenerTimer = new Timer(
+                _ => this.ListenStream(),
+                null,
+                0,
+                100);
         }
 
-        private async Task ListenStream()
+        private void ListenStream()
         {
-            while (!this.stopTokenSource.IsCancellationRequested)
+            if (!this.stream.DataAvailable)
+                return;
+
+            var messageSize = this.stream.ReadInt32();
+
+            var tmp = ArrayPool<byte>.Shared.Rent(messageSize);
+
+            try
             {
-                while (!this.stream.DataAvailable)
+                this.stream.Read(tmp, 0, messageSize);
+
+                using var messageStream = new MemoryStream(tmp, 0, messageSize);
+
+                var correlationId = messageStream.ReadInt32();
+
+                if (!this.pendingRequests.TryRemove(correlationId, out var request))
                 {
-                    if (this.stopTokenSource.IsCancellationRequested)
-                        return;
-
-                    await Task.Delay(100).ConfigureAwait(false);
-                }
-
-                var messageSize = this.stream.ReadInt32();
-
-                var tmp = new byte[messageSize];
-                this.stream.Read(tmp);
-
-                using var payload = new MemoryStream(tmp);
-                var correlationId = payload.ReadInt32();
-
-                if (!this.pendindRequests.TryRemove(correlationId, out var request))
-                {
-                    continue;
+                    return;
                 }
 
                 var message = (IResponse) Activator.CreateInstance(request.ResponseType)!;
 
                 if (message is IResponseV2)
-                    _ = payload.ReadTaggedFields();
+                    _ = messageStream.ReadTaggedFields();
 
-                message.Read(payload);
+                message.Read(messageStream);
 
-                if (payload.Length != payload.Position)
+                if (messageStream.Length != messageStream.Position)
                     throw new Exception("Some data was not read from response");
 
                 request.CompletionSource.TrySetResult(message);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(tmp);
             }
         }
 
         public Task<TResponse> SendAsync<TResponse>(IRequestMessage<TResponse> request, TimeSpan timeout)
             where TResponse : IResponse, new()
         {
-            var pendindRequest = new PendindRequest(
+            var pendingRequest = new PendingRequest(
                 timeout,
                 typeof(TResponse));
 
             lock (this.stream)
             {
-                this.pendindRequests.TryAdd(++this.lastCorrelationId, pendindRequest);
+                this.pendingRequests.TryAdd(++this.lastCorrelationId, pendingRequest);
 
                 this.stream.WriteMessage(
                     new Request(
                         this.lastCorrelationId,
-                        this.cliendId,
+                        this.clientId,
                         request));
             }
 
-            return pendindRequest.GetTask<TResponse>();
+            return pendingRequest.GetTask<TResponse>();
         }
 
         public void Dispose()
         {
-            this.stopTokenSource.Cancel();
-
-            this.listenerTask.GetAwaiter().GetResult();
-
+            this.listenerTimer.Dispose();
             this.client.Dispose();
         }
 
-        private class PendindRequest
+        private class PendingRequest
         {
             public TimeSpan Timeout { get; }
 
@@ -109,7 +110,7 @@ namespace KafkaClient
             public readonly TaskCompletionSource<IResponse> CompletionSource =
                 new TaskCompletionSource<IResponse>();
 
-            public PendindRequest(TimeSpan timeout, Type responseType)
+            public PendingRequest(TimeSpan timeout, Type responseType)
             {
                 this.Timeout = timeout;
                 this.ResponseType = responseType;

@@ -282,7 +282,6 @@ namespace KafkaClient
             return result;
         }
 
-
         public static TaggedField[] ReadTaggedFields(this Stream source)
         {
             var count = source.ReadUVarint();
