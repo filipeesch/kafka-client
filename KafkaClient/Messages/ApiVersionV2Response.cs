@@ -4,7 +4,7 @@ namespace KafkaClient.Messages
 
     public class ApiVersionV2Response : IResponse
     {
-        public short ErrorCode { get; private set; }
+        public ErrorCode Error { get; private set; }
 
         public ApiVersion[] ApiVersions { get; private set; }
 
@@ -12,7 +12,7 @@ namespace KafkaClient.Messages
 
         public void Read(Stream source)
         {
-            this.ErrorCode = source.ReadInt16();
+            this.Error = source.ReadErrorCode();
             this.ApiVersions = source.ReadArray<ApiVersion>();
             this.ThrottleTime = source.ReadInt32();
         }

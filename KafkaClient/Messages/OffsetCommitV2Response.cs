@@ -26,14 +26,14 @@ namespace KafkaClient.Messages
 
         public class Partition : IResponse
         {
-            public int ID { get; private set; }
+            public int Id { get; private set; }
 
-            public short ErrorCode { get; private set; }
+            public ErrorCode Error { get; private set; }
 
             public void Read(Stream source)
             {
-                this.ID = source.ReadInt32();
-                this.ErrorCode = source.ReadInt16();
+                this.Id = source.ReadInt32();
+                this.Error = source.ReadErrorCode();
             }
         }
     }

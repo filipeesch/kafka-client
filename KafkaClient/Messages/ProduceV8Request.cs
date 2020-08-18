@@ -15,7 +15,7 @@ namespace KafkaClient.Messages
 
         public short ApiVersion => 8;
 
-        public string TransactionalID { get; } = null;
+        public string TransactionalId { get; } = null;
 
         public ProduceAcks Acks { get; }
 
@@ -25,7 +25,7 @@ namespace KafkaClient.Messages
 
         public void Write(Stream destination)
         {
-            destination.WriteString(this.TransactionalID);
+            destination.WriteString(this.TransactionalId);
             destination.WriteInt16((short) this.Acks);
             destination.WriteInt32(this.Timeout);
             destination.WriteArray(this.Topics);
@@ -54,17 +54,17 @@ namespace KafkaClient.Messages
         {
             public Partition(int id, RecordBatch batch)
             {
-                this.ID = id;
+                this.Id = id;
                 this.Batch = batch;
             }
 
-            public int ID { get; }
+            public int Id { get; }
 
             public RecordBatch Batch { get; }
 
             public void Write(Stream destination)
             {
-                destination.WriteInt32(this.ID);
+                destination.WriteInt32(this.Id);
                 destination.WriteMessage(this.Batch);
             }
         }

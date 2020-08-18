@@ -6,17 +6,17 @@ namespace KafkaClient.Messages
     {
         public int ThrottleTimeMs { get; set; }
 
-        public short ErrorCode { get; set; }
+        public ErrorCode Error { get; set; }
 
-        public int SessionID { get; set; }
+        public int SessionId { get; set; }
 
         public Topic[] Topics { get; set; }
 
         public void Read(Stream source)
         {
             this.ThrottleTimeMs = source.ReadInt32();
-            this.ErrorCode = source.ReadInt16();
-            this.SessionID = source.ReadInt32();
+            this.Error = source.ReadErrorCode();
+            this.SessionId = source.ReadInt32();
             this.Topics = source.ReadArray<Topic>();
         }
 
@@ -48,9 +48,9 @@ namespace KafkaClient.Messages
 
         public class PartitionHeader : IResponse
         {
-            public int ID { get; set; }
+            public int Id { get; set; }
 
-            public short ErrorCode { get; set; }
+            public ErrorCode Error { get; set; }
 
             public long HighWatermark { get; set; }
 
@@ -64,8 +64,8 @@ namespace KafkaClient.Messages
 
             public void Read(Stream source)
             {
-                this.ID = source.ReadInt32();
-                this.ErrorCode = source.ReadInt16();
+                this.Id = source.ReadInt32();
+                this.Error = source.ReadErrorCode();
                 this.HighWatermark = source.ReadInt64();
                 this.LastStableOffset = source.ReadInt64();
                 this.LogStartOffset = source.ReadInt64();
@@ -76,13 +76,13 @@ namespace KafkaClient.Messages
 
         public class AbortedTransaction : IResponse
         {
-            public long ProducerID { get; set; }
+            public long ProducerId { get; set; }
 
             public long FirstOffset { get; set; }
 
             public void Read(Stream source)
             {
-                this.ProducerID = source.ReadInt64();
+                this.ProducerId = source.ReadInt64();
                 this.FirstOffset = source.ReadInt64();
             }
         }

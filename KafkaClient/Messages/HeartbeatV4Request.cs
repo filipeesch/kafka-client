@@ -7,31 +7,31 @@ namespace KafkaClient.Messages
     {
         public HeartbeatV4Request(string groupId, int generationId, string memberId)
         {
-            this.GroupID = groupId;
-            this.GenerationID = generationId;
-            this.MemberID = memberId;
+            this.GroupId = groupId;
+            this.GenerationId = generationId;
+            this.MemberId = memberId;
         }
 
         public ApiKey ApiKey => ApiKey.Heartbeat;
 
         public short ApiVersion => 4;
 
-        public string GroupID { get; }
+        public string GroupId { get; }
 
-        public int GenerationID { get; }
+        public int GenerationId { get; }
 
-        public string MemberID { get; }
+        public string MemberId { get; }
 
-        public string? GroupInstanceID { get; set; }
+        public string? GroupInstanceId { get; set; }
 
         public TaggedField[] TaggedFields => Array.Empty<TaggedField>();
 
         public void Write(Stream destination)
         {
-            destination.WriteCompactString(this.GroupID);
-            destination.WriteInt32(this.GenerationID);
-            destination.WriteCompactString(this.MemberID);
-            destination.WriteCompactNullableString(this.GroupInstanceID);
+            destination.WriteCompactString(this.GroupId);
+            destination.WriteInt32(this.GenerationId);
+            destination.WriteCompactString(this.MemberId);
+            destination.WriteCompactNullableString(this.GroupInstanceId);
             destination.WriteTaggedFields(this.TaggedFields);
         }
     }

@@ -8,13 +8,13 @@ namespace KafkaClient.Messages
 
         public Topic[] Topics { get; set; }
 
-        public short ErrorCode { get; set; }
+        public ErrorCode Error { get; set; }
 
         public void Read(Stream source)
         {
             this.ThrottleTimeMs = source.ReadInt32();
             this.Topics = source.ReadArray<Topic>();
-            this.ErrorCode = source.ReadInt16();
+            this.Error = source.ReadErrorCode();
         }
 
         public class Topic : IResponse
@@ -32,7 +32,7 @@ namespace KafkaClient.Messages
 
         public class Partition : IResponse
         {
-            public int ID { get; set; }
+            public int Id { get; set; }
 
             public long CommittedOffset { get; set; }
 
@@ -44,7 +44,7 @@ namespace KafkaClient.Messages
 
             public void Read(Stream source)
             {
-                this.ID = source.ReadInt32();
+                this.Id = source.ReadInt32();
                 this.CommittedOffset = source.ReadInt64();
                 this.CommittedLeaderEpoch = source.ReadInt32();
                 this.Metadata = source.ReadString();

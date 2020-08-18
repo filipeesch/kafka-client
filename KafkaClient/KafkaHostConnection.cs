@@ -2,6 +2,7 @@ namespace KafkaClient
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Net.Sockets;
     using System.Threading;
@@ -14,16 +15,16 @@ namespace KafkaClient
 
         private readonly ConcurrentDictionary<int, PendindRequest> pendindRequests = new ConcurrentDictionary<int, PendindRequest>();
 
-        private int lastCorrelationID;
+        private int lastCorrelationId;
 
         private readonly Task listenerTask;
 
         private readonly CancellationTokenSource stopTokenSource = new CancellationTokenSource();
-        private readonly string cliendID;
+        private readonly string cliendId;
 
-        public KafkaHostConnection(string host, int port, string cliendID)
+        public KafkaHostConnection(string host, int port, string cliendId)
         {
-            this.cliendID = cliendID;
+            this.cliendId = cliendId;
             this.client = new TcpClient(host, port);
             this.stream = this.client.GetStream();
 
@@ -48,19 +49,24 @@ namespace KafkaClient
                 this.stream.Read(tmp);
 
                 using var payload = new MemoryStream(tmp);
-                var correlationID = payload.ReadInt32();
+                var correlationId = payload.ReadInt32();
 
-                if (this.pendindRequests.TryRemove(correlationID, out var request))
+                if (!this.pendindRequests.TryRemove(correlationId, out var request))
                 {
-                    var message = (IResponse) Activator.CreateInstance(request.ResponseType);
-
-                    if (message is IResponseV2)
-                        _ = payload.ReadTaggedFields();
-
-                    message.Read(payload);
-
-                    request.CompletionSource.TrySetResult(message);
+                    continue;
                 }
+
+                var message = (IResponse) Activator.CreateInstance(request.ResponseType)!;
+
+                if (message is IResponseV2)
+                    _ = payload.ReadTaggedFields();
+
+                message.Read(payload);
+
+                if (payload.Length != payload.Position)
+                    throw new Exception("Some data was not read from response");
+
+                request.CompletionSource.TrySetResult(message);
             }
         }
 
@@ -73,12 +79,12 @@ namespace KafkaClient
 
             lock (this.stream)
             {
-                this.pendindRequests.TryAdd(++this.lastCorrelationID, pendindRequest);
+                this.pendindRequests.TryAdd(++this.lastCorrelationId, pendindRequest);
 
                 this.stream.WriteMessage(
                     new Request(
-                        this.lastCorrelationID,
-                        this.cliendID,
+                        this.lastCorrelationId,
+                        this.cliendId,
                         request));
             }
 

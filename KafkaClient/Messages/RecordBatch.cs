@@ -16,7 +16,7 @@ namespace KafkaClient
 
         public byte Magic { get; private set; } = 2;
 
-        public int CRC { get; private set; }
+        public int Crc { get; private set; }
 
         public short Attributes { get; private set; } = 0;
 
@@ -48,14 +48,14 @@ namespace KafkaClient
 
             var crcBytes = crcSlice.ToArray();
 
-            this.CRC = (int) Crc32CAlgorithm.Compute(crcBytes);
+            this.Crc = (int) Crc32CAlgorithm.Compute(crcBytes);
 
             destination.WriteInt32(crcBytes.Length + 8 + 4 + 4 + 1 + 4);
             destination.WriteInt64(this.BaseOffset);
             destination.WriteInt32(this.BatchLength = GetBatchSizeFromCrcSliceSize(crcBytes.Length));
             destination.WriteInt32(this.PartitionLeaderEpoch);
             destination.WriteByte(this.Magic);
-            destination.WriteInt32(this.CRC);
+            destination.WriteInt32(this.Crc);
             destination.Write(crcBytes);
         }
 
@@ -73,14 +73,14 @@ namespace KafkaClient
             this.BatchLength = tmp.ReadInt32();
             this.PartitionLeaderEpoch = tmp.ReadInt32();
             this.Magic = (byte) tmp.ReadByte();
-            this.CRC = tmp.ReadInt32();
+            this.Crc = tmp.ReadInt32();
 
             var crc = (int) Crc32CAlgorithm.Compute(
                 data,
                 8 + 4 + 4 + 1 + 4,
                 this.BatchLength - 4 - 1 - 4);
 
-            if (crc != this.CRC)
+            if (crc != this.Crc)
             {
                 throw new Exception("Corrupt message");
             }

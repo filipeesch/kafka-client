@@ -7,7 +7,7 @@ namespace KafkaClient.Messages
     {
         public OffsetFetchV5Request(string groupId, Topic[] topics)
         {
-            this.GroupID = groupId;
+            this.GroupId = groupId;
             this.Topics = topics;
         }
 
@@ -15,13 +15,13 @@ namespace KafkaClient.Messages
 
         public short ApiVersion => 5;
 
-        public string GroupID { get; }
+        public string GroupId { get; }
 
         public Topic[] Topics { get; }
 
         public void Write(Stream destination)
         {
-            destination.WriteString(this.GroupID);
+            destination.WriteString(this.GroupId);
             destination.WriteArray(this.Topics);
         }
 

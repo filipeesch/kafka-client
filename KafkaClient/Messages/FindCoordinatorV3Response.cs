@@ -6,11 +6,11 @@ namespace KafkaClient.Messages
     {
         public int ThrottleTimeMs { get; private set; }
 
-        public short ErrorCode { get; private set; }
+        public ErrorCode Error { get; private set; }
 
         public string ErrorMessage { get; private set; }
 
-        public int NodeID { get; private set; }
+        public int NodeId { get; private set; }
 
         public string Host { get; private set; }
 
@@ -21,9 +21,9 @@ namespace KafkaClient.Messages
         public void Read(Stream source)
         {
             this.ThrottleTimeMs = source.ReadInt32();
-            this.ErrorCode = source.ReadInt16();
+            this.Error = source.ReadErrorCode();
             this.ErrorMessage = source.ReadCompactString();
-            this.NodeID = source.ReadInt32();
+            this.NodeId = source.ReadInt32();
             this.Host = source.ReadCompactString();
             this.Port = source.ReadInt32();
             this.TaggedFields = source.ReadTaggedFields();

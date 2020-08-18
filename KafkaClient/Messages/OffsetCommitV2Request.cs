@@ -11,18 +11,18 @@ namespace KafkaClient.Messages
             long retentionTimeMs,
             Topic[] topics)
         {
-            this.GroupID = groupId;
-            this.GroupGenerationID = groupGenerationId;
-            this.MemberID = memberId;
+            this.GroupId = groupId;
+            this.GroupGenerationId = groupGenerationId;
+            this.MemberId = memberId;
             this.RetentionTimeMs = retentionTimeMs;
             this.Topics = topics;
         }
 
-        public string GroupID { get; }
+        public string GroupId { get; }
 
-        public int GroupGenerationID { get; }
+        public int GroupGenerationId { get; }
 
-        public string MemberID { get; }
+        public string MemberId { get; }
 
         public long RetentionTimeMs { get; }
 
@@ -34,8 +34,8 @@ namespace KafkaClient.Messages
 
         public void Write(Stream destination)
         {
-            destination.WriteString(this.GroupID);
-            destination.WriteInt32(this.GroupGenerationID);
+            destination.WriteString(this.GroupId);
+            destination.WriteInt32(this.GroupGenerationId);
             destination.WriteInt64(this.RetentionTimeMs);
             destination.WriteArray(this.Topics);
         }
@@ -61,7 +61,7 @@ namespace KafkaClient.Messages
 
         public class Partition : IRequest
         {
-            public int ID { get; }
+            public int Id { get; }
 
             public long Offset { get; }
 
@@ -69,7 +69,7 @@ namespace KafkaClient.Messages
 
             public void Write(Stream destination)
             {
-                destination.WriteInt32(this.ID);
+                destination.WriteInt32(this.Id);
                 destination.WriteInt64(this.Offset);
                 destination.WriteString(this.Metadata);
             }

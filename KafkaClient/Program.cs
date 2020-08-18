@@ -87,7 +87,7 @@
             return connection.SendAsync(
                 new FetchV11Request
                 {
-                    ReplicaID = -1,
+                    ReplicaId = -1,
                     MaxWaitTime = 5000,
                     MinBytes = 0,
                     MaxBytes = 1024 * 16 * 3,
@@ -101,19 +101,19 @@
                             {
                                 new FetchV11Request.Partition
                                 {
-                                    ID = 0,
+                                    Id = 0,
                                     FetchOffset = 0,
                                     PartitionMaxBytes = 1024 * 16
                                 },
                                 new FetchV11Request.Partition
                                 {
-                                    ID = 1,
+                                    Id = 1,
                                     FetchOffset = 0,
                                     PartitionMaxBytes = 1024 * 16
                                 },
                                 new FetchV11Request.Partition
                                 {
-                                    ID = 2,
+                                    Id = 2,
                                     FetchOffset = 0,
                                     PartitionMaxBytes = 1024 * 16
                                 },

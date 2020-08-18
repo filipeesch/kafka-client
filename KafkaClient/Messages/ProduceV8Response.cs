@@ -29,9 +29,9 @@ namespace KafkaClient.Messages
 
         public class Partition : IResponse
         {
-            public int ID { get; set; }
+            public int Id { get; set; }
 
-            public short ErrorCode { get; set; }
+            public ErrorCode Error { get; set; }
 
             public long Offset { get; set; }
 
@@ -41,14 +41,17 @@ namespace KafkaClient.Messages
 
             public RecordError[] Errors { get; set; }
 
+            public string? ErrorMessage { get; set; }
+
             public void Read(Stream source)
             {
-                this.ID = source.ReadInt32();
-                this.ErrorCode = source.ReadInt16();
+                this.Id = source.ReadInt32();
+                this.Error = source.ReadErrorCode();
                 this.Offset = source.ReadInt64();
                 this.LogAppendTime = source.ReadInt64();
                 this.LogStartOffset = source.ReadInt64();
                 this.Errors = source.ReadArray<RecordError>();
+                this.ErrorMessage = source.ReadNullableString();
             }
         }
 
@@ -56,12 +59,12 @@ namespace KafkaClient.Messages
         {
             public int BatchIndex { get; set; }
 
-            public string Message { get; set; }
+            public string? Message { get; set; }
 
             public void Read(Stream source)
             {
                 this.BatchIndex = source.ReadInt32();
-                this.Message = source.ReadString();
+                this.Message = source.ReadNullableString();
             }
         }
     }

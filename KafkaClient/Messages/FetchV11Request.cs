@@ -9,7 +9,7 @@ namespace KafkaClient.Messages
 
         public short ApiVersion => 11;
 
-        public int ReplicaID { get; set; }
+        public int ReplicaId { get; set; }
 
         public int MaxWaitTime { get; set; }
 
@@ -19,7 +19,7 @@ namespace KafkaClient.Messages
 
         public byte IsolationLevel { get; set; }
 
-        public int SessionID { get; set; }
+        public int SessionId { get; set; }
 
         public int SessionEpoch { get; set; }
 
@@ -27,20 +27,20 @@ namespace KafkaClient.Messages
 
         public ForgottenTopic[] ForgottenTopics { get; set; } = Array.Empty<ForgottenTopic>();
 
-        public string RackID { get; set; } = string.Empty;
+        public string RackId { get; set; } = string.Empty;
 
         public void Write(Stream destination)
         {
-            destination.WriteInt32(this.ReplicaID);
+            destination.WriteInt32(this.ReplicaId);
             destination.WriteInt32(this.MaxWaitTime);
             destination.WriteInt32(this.MinBytes);
             destination.WriteInt32(this.MaxBytes);
             destination.WriteByte(this.IsolationLevel);
-            destination.WriteInt32(this.SessionID);
+            destination.WriteInt32(this.SessionId);
             destination.WriteInt32(this.SessionEpoch);
             destination.WriteArray(this.Topics);
             destination.WriteArray(this.ForgottenTopics);
-            destination.WriteString(this.RackID);
+            destination.WriteString(this.RackId);
         }
 
         public class Topic : IRequest
@@ -58,7 +58,7 @@ namespace KafkaClient.Messages
 
         public class Partition : IRequest
         {
-            public int ID { get; set; }
+            public int Id { get; set; }
 
             public int CurrentLeaderEpoch { get; set; }
 
@@ -70,7 +70,7 @@ namespace KafkaClient.Messages
 
             public void Write(Stream destination)
             {
-                destination.WriteInt32(this.ID);
+                destination.WriteInt32(this.Id);
                 destination.WriteInt32(this.CurrentLeaderEpoch);
                 destination.WriteInt64(this.FetchOffset);
                 destination.WriteInt64(this.LogStartOffset);

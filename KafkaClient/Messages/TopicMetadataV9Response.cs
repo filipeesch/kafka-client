@@ -6,8 +6,8 @@ namespace KafkaClient.Messages
     {
         public int ThrottleTime { get; private set; }
         public Broker[] Brokers { get; private set; }
-        public string? ClusterID { get; private set; }
-        public int ControllerID { get; private set; }
+        public string? ClusterId { get; private set; }
+        public int ControllerId { get; private set; }
         public Topic[] Topics { get; private set; }
         public int ClusterAuthorizedOperations { get; private set; }
         public TaggedField[] TaggedFields { get; private set; }
@@ -16,8 +16,8 @@ namespace KafkaClient.Messages
         {
             this.ThrottleTime = source.ReadInt32();
             this.Brokers = source.ReadCompactArray<Broker>();
-            this.ClusterID = source.ReadCompactNullableString();
-            this.ControllerID = source.ReadInt32();
+            this.ClusterId = source.ReadCompactNullableString();
+            this.ControllerId = source.ReadInt32();
             this.Topics = source.ReadCompactArray<Topic>();
             this.ClusterAuthorizedOperations = source.ReadInt32();
             this.TaggedFields = source.ReadTaggedFields();
@@ -25,7 +25,7 @@ namespace KafkaClient.Messages
 
         public class Topic : IResponseV2
         {
-            public short ErrorCode { get; private set; }
+            public ErrorCode Error { get; private set; }
             public string Name { get; private set; }
             public bool IsInternal { get; private set; }
             public Partition[] Partitions { get; private set; }
@@ -34,7 +34,7 @@ namespace KafkaClient.Messages
 
             public void Read(Stream source)
             {
-                this.ErrorCode = source.ReadInt16();
+                this.Error = source.ReadErrorCode();
                 this.Name = source.ReadCompactString();
                 this.IsInternal = source.ReadBoolean();
                 this.Partitions = source.ReadCompactArray<Partition>();
@@ -45,9 +45,9 @@ namespace KafkaClient.Messages
 
         public class Partition : IResponseV2
         {
-            public short ErrorCode { get; set; }
-            public int ID { get; private set; }
-            public int LeaderID { get; private set; }
+            public ErrorCode Error { get; set; }
+            public int Id { get; private set; }
+            public int LeaderId { get; private set; }
             public int LeaderEpoch { get; private set; }
             public int[] ReplicaNodes { get; private set; }
             public int[] IsrNodes { get; private set; }
@@ -56,9 +56,9 @@ namespace KafkaClient.Messages
 
             public void Read(Stream source)
             {
-                this.ErrorCode = source.ReadInt16();
-                this.ID = source.ReadInt32();
-                this.LeaderID = source.ReadInt32();
+                this.Error = source.ReadErrorCode();
+                this.Id = source.ReadInt32();
+                this.LeaderId = source.ReadInt32();
                 this.LeaderEpoch = source.ReadInt32();
                 this.ReplicaNodes = source.ReadCompactInt32Array();
                 this.IsrNodes = source.ReadCompactInt32Array();
