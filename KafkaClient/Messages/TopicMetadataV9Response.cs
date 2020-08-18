@@ -6,7 +6,7 @@ namespace KafkaClient.Messages
     {
         public int ThrottleTime { get; private set; }
         public Broker[] Brokers { get; private set; }
-        public string ClusterID { get; private set; }
+        public string? ClusterID { get; private set; }
         public int ControllerID { get; private set; }
         public Topic[] Topics { get; private set; }
         public int ClusterAuthorizedOperations { get; private set; }
@@ -16,7 +16,7 @@ namespace KafkaClient.Messages
         {
             this.ThrottleTime = source.ReadInt32();
             this.Brokers = source.ReadCompactArray<Broker>();
-            this.ClusterID = source.ReadCompactString();
+            this.ClusterID = source.ReadCompactNullableString();
             this.ControllerID = source.ReadInt32();
             this.Topics = source.ReadCompactArray<Topic>();
             this.ClusterAuthorizedOperations = source.ReadInt32();
@@ -72,7 +72,7 @@ namespace KafkaClient.Messages
             public int NodeId { get; private set; }
             public string Host { get; private set; }
             public int Port { get; private set; }
-            public string Rack { get; private set; }
+            public string? Rack { get; private set; }
             public TaggedField[] TaggedFields { get; private set; }
 
             public void Read(Stream source)
@@ -80,7 +80,7 @@ namespace KafkaClient.Messages
                 this.NodeId = source.ReadInt32();
                 this.Host = source.ReadCompactString();
                 this.Port = source.ReadInt32();
-                this.Rack = source.ReadCompactString();
+                this.Rack = source.ReadCompactNullableString();
                 this.TaggedFields = source.ReadTaggedFields();
             }
         }

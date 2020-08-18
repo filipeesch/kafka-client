@@ -61,8 +61,8 @@
             var heartbeatResponse = await connection.SendAsync(
                 new HeartbeatV4Request(
                     groupId,
-                    0,
-                    memberId),
+                    joinGroupResponse1.GenerationId,
+                    joinGroupResponse1.MemberId),
                 TimeSpan.FromSeconds(30));
 
             var offsetFetchResponse = await connection.SendAsync(

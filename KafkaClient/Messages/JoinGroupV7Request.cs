@@ -48,7 +48,7 @@ namespace KafkaClient.Messages
             destination.WriteInt32(this.SessionTimeoutMs);
             destination.WriteInt32(this.RebalanceTimeoutMs);
             destination.WriteCompactString(this.MemberId);
-            destination.WriteCompactString(this.GroupInstanceId);
+            destination.WriteCompactNullableString(this.GroupInstanceId);
             destination.WriteCompactString(this.ProtocolType);
             destination.WriteCompactArray(this.SupportedProtocols);
             destination.WriteTaggedFields(this.TaggedFields);

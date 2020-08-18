@@ -77,7 +77,15 @@ namespace KafkaClient
             destination.Write(Encoding.UTF8.GetBytes(value));
         }
 
-        public static void WriteCompactString(this Stream destination, string? value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteCompactString(this Stream destination, string value)
+        {
+            destination.WriteUVarint((uint) value.Length + 1u);
+            destination.Write(Encoding.UTF8.GetBytes(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteCompactNullableString(this Stream destination, string? value)
         {
             if (value is null)
             {
@@ -85,11 +93,11 @@ namespace KafkaClient
                 return;
             }
 
-            destination.WriteUVarint((uint) value.Length + 1u);
-            destination.Write(Encoding.UTF8.GetBytes(value));
+            destination.WriteCompactString(value);
         }
 
-        public static void WriteCompactByteArray(this Stream destination, byte[]? data)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteCompactNullableByteArray(this Stream destination, byte[]? data)
         {
             if (data is null)
             {
@@ -97,10 +105,17 @@ namespace KafkaClient
                 return;
             }
 
+            destination.WriteCompactByteArray(data);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteCompactByteArray(this Stream destination, byte[] data)
+        {
             destination.WriteUVarint((uint) data.Length + 1u);
             destination.Write(data);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBoolean(this Stream destination, bool value)
         {
             destination.WriteByte((byte) (value ? 1 : 0));
@@ -138,7 +153,11 @@ namespace KafkaClient
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ReadBoolean(this Stream source) => source.ReadByte() != 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ErrorCode ReadErrorCode(this Stream source) => (ErrorCode) source.ReadInt16();
 
         public static short ReadInt16(this Stream source)
         {
@@ -161,6 +180,7 @@ namespace KafkaClient
             return BinaryPrimitives.ReadInt64BigEndian(buffer);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] ReadBytes(this Stream source, int count)
         {
             var bytes = new byte[count];
@@ -168,32 +188,49 @@ namespace KafkaClient
             return bytes;
         }
 
-        public static string ReadString(this Stream source)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string? ReadString(this Stream source)
         {
             return source.ReadString(source.ReadInt16());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string? ReadNullableString(this Stream source)
+        {
+            return source.ReadNullableString(source.ReadInt16());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string? ReadNullableString(this Stream source, int size)
+        {
+            return size < 0 ? null : source.ReadString(size);
+        }
+
         public static string ReadString(this Stream source, int size)
         {
-            if (size < 0)
-            {
-                return null;
-            }
-
             Span<byte> buffer = stackalloc byte[size];
             source.Read(buffer);
             return Encoding.UTF8.GetString(buffer);
         }
 
-        public static string ReadCompactString(this Stream source)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string? ReadCompactNullableString(this Stream source)
         {
             var size = source.ReadUVarint();
 
-            if (size <= 0)
-            {
-                return null;
-            }
+            return size <= 0 ?
+                null :
+                source.InternalReadCompactString(size);
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string ReadCompactString(this Stream source)
+        {
+            return source.InternalReadCompactString(source.ReadUVarint());
+        }
+
+        private static string InternalReadCompactString(this Stream source, int size)
+        {
             Span<byte> buffer = stackalloc byte[size - 1];
             source.Read(buffer);
             return Encoding.UTF8.GetString(buffer);
@@ -288,6 +325,7 @@ namespace KafkaClient
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ReadVarint(this Stream source)
         {
             var num = source.ReadUVarint();
@@ -323,6 +361,7 @@ namespace KafkaClient
             return num;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteVarint(this Stream destination, long num) =>
             destination.WriteUVarint(((ulong) num << 1) ^ ((ulong) num >> 63));
 

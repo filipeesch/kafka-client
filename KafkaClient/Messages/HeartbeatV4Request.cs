@@ -22,7 +22,7 @@ namespace KafkaClient.Messages
 
         public string MemberID { get; }
 
-        public string GroupInstanceID { get; set; }
+        public string? GroupInstanceID { get; set; }
 
         public TaggedField[] TaggedFields => Array.Empty<TaggedField>();
 
@@ -31,7 +31,7 @@ namespace KafkaClient.Messages
             destination.WriteCompactString(this.GroupID);
             destination.WriteInt32(this.GenerationID);
             destination.WriteCompactString(this.MemberID);
-            destination.WriteCompactString(this.GroupInstanceID);
+            destination.WriteCompactNullableString(this.GroupInstanceID);
             destination.WriteTaggedFields(this.TaggedFields);
         }
     }
