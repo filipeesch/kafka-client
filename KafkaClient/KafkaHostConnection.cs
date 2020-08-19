@@ -2,6 +2,7 @@ namespace KafkaClient
 {
     using System;
     using System.Buffers;
+    using System.Buffers.Binary;
     using System.Collections.Concurrent;
     using System.IO;
     using System.Net.Sockets;
@@ -17,7 +18,10 @@ namespace KafkaClient
 
         private int lastCorrelationId;
 
-        private readonly Timer listenerTimer;
+        private readonly CancellationTokenSource stopTokenSource = new CancellationTokenSource();
+        private readonly Task listenerTask;
+
+        private readonly byte[] messageSizeBuffer = new byte[sizeof(int)];
 
         private readonly string clientId;
 
@@ -27,51 +31,66 @@ namespace KafkaClient
             this.client = new TcpClient(host, port);
             this.stream = this.client.GetStream();
 
-            this.listenerTimer = new Timer(
-                _ => this.ListenStream(),
-                null,
-                0,
-                100);
+            this.listenerTask = Task.Run(this.ListenStream);
         }
 
-        private void ListenStream()
+        private async Task ListenStream()
         {
-            if (!this.stream.DataAvailable)
-                return;
-
-            var messageSize = this.stream.ReadInt32();
-
-            var tmp = ArrayPool<byte>.Shared.Rent(messageSize);
-
-            try
+            while (!this.stopTokenSource.IsCancellationRequested)
             {
-                this.stream.Read(tmp, 0, messageSize);
+                try
+                {
+                    var messageSize = await this.WaitForMessageSizeAsync().ConfigureAwait(false);
 
-                using var messageStream = new MemoryStream(tmp, 0, messageSize);
+                    if (messageSize <= 0)
+                        continue;
 
-                var correlationId = messageStream.ReadInt32();
+                    var tmp = ArrayPool<byte>.Shared.Rent(messageSize);
 
-                if (!this.pendingRequests.TryRemove(correlationId, out var request))
+                    try
+                    {
+                        this.stream.Read(tmp, 0, messageSize);
+
+                        using var messageStream = new MemoryStream(tmp, 0, messageSize);
+
+                        var correlationId = messageStream.ReadInt32();
+
+                        if (!this.pendingRequests.TryRemove(correlationId, out var request))
+                        {
+                            return;
+                        }
+
+                        var message = (IResponse) Activator.CreateInstance(request.ResponseType)!;
+
+                        if (message is IResponseV2)
+                            _ = messageStream.ReadTaggedFields();
+
+                        message.Read(messageStream);
+
+                        if (messageStream.Length != messageStream.Position)
+                            throw new Exception("Some data was not read from response");
+
+                        request.CompletionSource.TrySetResult(message);
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(tmp);
+                    }
+                }
+                catch (OperationCanceledException)
                 {
                     return;
                 }
-
-                var message = (IResponse) Activator.CreateInstance(request.ResponseType)!;
-
-                if (message is IResponseV2)
-                    _ = messageStream.ReadTaggedFields();
-
-                message.Read(messageStream);
-
-                if (messageStream.Length != messageStream.Position)
-                    throw new Exception("Some data was not read from response");
-
-                request.CompletionSource.TrySetResult(message);
             }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(tmp);
-            }
+        }
+
+        private async Task<int> WaitForMessageSizeAsync()
+        {
+            await this.stream
+                .ReadAsync(this.messageSizeBuffer, 0, sizeof(int), this.stopTokenSource.Token)
+                .ConfigureAwait(false);
+
+            return BinaryPrimitives.ReadInt32BigEndian(this.messageSizeBuffer);
         }
 
         public Task<TResponse> SendAsync<TResponse>(IRequestMessage<TResponse> request, TimeSpan timeout)
@@ -97,7 +116,10 @@ namespace KafkaClient
 
         public void Dispose()
         {
-            this.listenerTimer.Dispose();
+            this.stopTokenSource.Cancel();
+            this.listenerTask.GetAwaiter().GetResult();
+            this.listenerTask.Dispose();
+            this.stream.Dispose();
             this.client.Dispose();
         }
 
