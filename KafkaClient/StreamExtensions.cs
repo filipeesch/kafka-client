@@ -13,6 +13,7 @@ namespace KafkaClient
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteMessage(this Stream destination, IRequest message) => message.Write(destination);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt16(this Stream destination, short value)
         {
             Span<byte> tmp = stackalloc byte[2];
@@ -20,6 +21,7 @@ namespace KafkaClient
             destination.Write(tmp);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt32(this Stream destination, int value)
         {
             Span<byte> tmp = stackalloc byte[4];
@@ -27,6 +29,7 @@ namespace KafkaClient
             destination.Write(tmp);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt64(this Stream destination, long value)
         {
             Span<byte> tmp = stackalloc byte[8];
@@ -65,6 +68,7 @@ namespace KafkaClient
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteString(this Stream destination, string value)
         {
             if (value is null)
@@ -159,6 +163,7 @@ namespace KafkaClient
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ErrorCode ReadErrorCode(this Stream source) => (ErrorCode) source.ReadInt16();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short ReadInt16(this Stream source)
         {
             Span<byte> buffer = stackalloc byte[2];
@@ -166,6 +171,7 @@ namespace KafkaClient
             return BinaryPrimitives.ReadInt16BigEndian(buffer);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ReadInt32(this Stream source)
         {
             Span<byte> buffer = stackalloc byte[4];
@@ -173,6 +179,7 @@ namespace KafkaClient
             return BinaryPrimitives.ReadInt32BigEndian(buffer);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ReadInt64(this Stream source)
         {
             Span<byte> buffer = stackalloc byte[8];
@@ -206,6 +213,7 @@ namespace KafkaClient
             return size < 0 ? null : source.ReadString(size);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string ReadString(this Stream source, int size)
         {
             Span<byte> buffer = stackalloc byte[size];
@@ -220,22 +228,16 @@ namespace KafkaClient
 
             return size <= 0 ?
                 null :
-                source.InternalReadCompactString(size);
+                source.ReadString(size - 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string ReadCompactString(this Stream source)
         {
-            return source.InternalReadCompactString(source.ReadUVarint());
+            return source.ReadString(source.ReadUVarint() - 1);
         }
 
-        private static string InternalReadCompactString(this Stream source, int size)
-        {
-            Span<byte> buffer = stackalloc byte[size - 1];
-            source.Read(buffer);
-            return Encoding.UTF8.GetString(buffer);
-        }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] ReadCompactByteArray(this Stream source)
         {
             var size = source.ReadUVarint();
@@ -335,12 +337,12 @@ namespace KafkaClient
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ReadUVarint(this Stream source) => source.ReadUVarint(out _);
 
-        public static int ReadUVarint(this Stream source, out int bytesReaded)
+        public static int ReadUVarint(this Stream source, out int bytesRead)
         {
             const int endMask = 0b1000_0000;
             const int valueMask = 0b0111_1111;
 
-            bytesReaded = 0;
+            bytesRead = 0;
 
             var num = 0;
             var shift = 0;
@@ -350,7 +352,7 @@ namespace KafkaClient
             {
                 current = source.ReadByte();
 
-                if (++bytesReaded > 4)
+                if (++bytesRead > 4)
                     throw new InvalidOperationException("The value is not a valid VARINT");
 
                 num |= (current & valueMask) << shift;

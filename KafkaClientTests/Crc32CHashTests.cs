@@ -36,7 +36,7 @@ namespace KafkaClientTests
         }
 
         [TestMethod]
-        public void Compute_LittleArray()
+        public void Compute_SmallArray()
         {
             // Arrange
             var data = new byte[] { 0, 11, 25, 78, 255, 100 };
