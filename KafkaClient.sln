@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaClient", "KafkaClient\KafkaClient.csproj", "{08310793-6189-4F54-88EC-A6F489A3FCC3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaClientTests", "KafkaClientTests\KafkaClientTests.csproj", "{A11360A2-83CF-4FAA-AAC0-FAA9C77D3AD9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{08310793-6189-4F54-88EC-A6F489A3FCC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08310793-6189-4F54-88EC-A6F489A3FCC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08310793-6189-4F54-88EC-A6F489A3FCC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A11360A2-83CF-4FAA-AAC0-FAA9C77D3AD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A11360A2-83CF-4FAA-AAC0-FAA9C77D3AD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A11360A2-83CF-4FAA-AAC0-FAA9C77D3AD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A11360A2-83CF-4FAA-AAC0-FAA9C77D3AD9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

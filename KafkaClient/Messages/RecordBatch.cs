@@ -5,7 +5,6 @@ namespace KafkaClient
     using System.IO;
     using System.Runtime.CompilerServices;
     using System.Text;
-    using Crc32C;
 
     public class RecordBatch : IRequest, IResponse
     {
@@ -37,7 +36,7 @@ namespace KafkaClient
 
         public void Write(Stream destination)
         {
-            using var crcSlice = new MemoryStream(1024 * 4);
+            using var crcSlice = MemoryStreamFactory.GetStream();
             crcSlice.WriteInt16(this.Attributes);
             crcSlice.WriteInt32(this.LastOffsetDelta);
             crcSlice.WriteInt64(this.FirstTimestamp);
@@ -47,17 +46,16 @@ namespace KafkaClient
             crcSlice.WriteInt32(this.BaseSequence);
             crcSlice.WriteArray(this.Records);
 
-            var crcBytes = crcSlice.ToArray();
+            var crcSliceLength = (int) crcSlice.Length;
+            this.Crc = (int) Crc32CHash.Compute(crcSlice.GetBuffer(), 0, crcSliceLength);
 
-            this.Crc = (int) Crc32CAlgorithm.Compute(crcBytes);
-
-            destination.WriteInt32(crcBytes.Length + 8 + 4 + 4 + 1 + 4);
+            destination.WriteInt32(crcSliceLength + 8 + 4 + 4 + 1 + 4);
             destination.WriteInt64(this.BaseOffset);
-            destination.WriteInt32(this.BatchLength = GetBatchSizeFromCrcSliceSize(crcBytes.Length));
+            destination.WriteInt32(this.BatchLength = GetBatchSizeFromCrcSliceSize(crcSliceLength));
             destination.WriteInt32(this.PartitionLeaderEpoch);
             destination.WriteByte(this.Magic);
             destination.WriteInt32(this.Crc);
-            destination.Write(crcBytes);
+            crcSlice.WriteTo(destination);
         }
 
         public void Read(Stream source)
@@ -79,7 +77,7 @@ namespace KafkaClient
                 this.Magic = (byte) tmp.ReadByte();
                 this.Crc = tmp.ReadInt32();
 
-                var crc = (int) Crc32CAlgorithm.Compute(
+                var crc = (int) Crc32CHash.Compute(
                     data,
                     8 + 4 + 4 + 1 + 4,
                     this.BatchLength - 4 - 1 - 4);
