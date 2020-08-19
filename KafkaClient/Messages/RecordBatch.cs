@@ -65,41 +65,65 @@ namespace KafkaClient
             if (size == 0)
                 return;
 
-            var data = ArrayPool<byte>.Shared.Rent(size);
+            var initialPosition = source.Position;
 
-            try
-            {
-                source.Read(data, 0, size);
-                using var tmp = new MemoryStream(data, 0, size);
-                this.BaseOffset = tmp.ReadInt64();
-                this.BatchLength = tmp.ReadInt32();
-                this.PartitionLeaderEpoch = tmp.ReadInt32();
-                this.Magic = (byte) tmp.ReadByte();
-                this.Crc = tmp.ReadInt32();
+            this.BaseOffset = source.ReadInt64();
+            this.BatchLength = source.ReadInt32();
+            this.PartitionLeaderEpoch = source.ReadInt32();
+            this.Magic = (byte) source.ReadByte();
+            this.Crc = source.ReadInt32();
+            this.Attributes = source.ReadInt16();
+            this.LastOffsetDelta = source.ReadInt32();
+            this.FirstTimestamp = source.ReadInt64();
+            this.MaxTimestamp = source.ReadInt64();
+            this.ProducerId = source.ReadInt64();
+            this.ProducerEpoch = source.ReadInt16();
+            this.BaseSequence = source.ReadInt32();
+            this.Records = source.ReadArray<Record>();
 
-                var crc = (int) Crc32CHash.Compute(
-                    data,
-                    8 + 4 + 4 + 1 + 4,
-                    this.BatchLength - 4 - 1 - 4);
+            var bytesRead = (int) (source.Position - initialPosition);
+            source.SkipBytes(size - bytesRead);
 
-                if (crc != this.Crc)
-                {
-                    throw new Exception("Corrupt message");
-                }
-
-                this.Attributes = tmp.ReadInt16();
-                this.LastOffsetDelta = tmp.ReadInt32();
-                this.FirstTimestamp = tmp.ReadInt64();
-                this.MaxTimestamp = tmp.ReadInt64();
-                this.ProducerId = tmp.ReadInt64();
-                this.ProducerEpoch = tmp.ReadInt16();
-                this.BaseSequence = tmp.ReadInt32();
-                this.Records = tmp.ReadArray<Record>();
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(data);
-            }
+            // var size = source.ReadInt32();
+            //
+            // if (size == 0)
+            //     return;
+            //
+            // var data = ArrayPool<byte>.Shared.Rent(size);
+            //
+            // try
+            // {
+            //     source.Read(data, 0, size);
+            //     using var tmp = new MemoryStream(data, 0, size);
+            //     this.BaseOffset = tmp.ReadInt64();
+            //     this.BatchLength = tmp.ReadInt32();
+            //     this.PartitionLeaderEpoch = tmp.ReadInt32();
+            //     this.Magic = (byte) tmp.ReadByte();
+            //     this.Crc = tmp.ReadInt32();
+            //
+            //     var crc = (int) Crc32CHash.Compute(
+            //         data,
+            //         (int)tmp.Position,
+            //         this.BatchLength - 4 - 1 - 4);
+            //
+            //     if (crc != this.Crc)
+            //     {
+            //         throw new Exception("Corrupt message");
+            //     }
+            //
+            //     this.Attributes = tmp.ReadInt16();
+            //     this.LastOffsetDelta = tmp.ReadInt32();
+            //     this.FirstTimestamp = tmp.ReadInt64();
+            //     this.MaxTimestamp = tmp.ReadInt64();
+            //     this.ProducerId = tmp.ReadInt64();
+            //     this.ProducerEpoch = tmp.ReadInt16();
+            //     this.BaseSequence = tmp.ReadInt32();
+            //     this.Records = tmp.ReadArray<Record>();
+            // }
+            // finally
+            // {
+            //     ArrayPool<byte>.Shared.Return(data);
+            // }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

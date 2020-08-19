@@ -6,6 +6,8 @@ namespace KafkaClient
     using System.Collections.Concurrent;
     using System.IO;
     using System.Net.Sockets;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -45,43 +47,43 @@ namespace KafkaClient
                     if (messageSize <= 0)
                         continue;
 
-                    var tmp = ArrayPool<byte>.Shared.Rent(messageSize);
-
-                    try
-                    {
-                        this.stream.Read(tmp, 0, messageSize);
-
-                        using var messageStream = new MemoryStream(tmp, 0, messageSize);
-
-                        var correlationId = messageStream.ReadInt32();
-
-                        if (!this.pendingRequests.TryRemove(correlationId, out var request))
-                        {
-                            return;
-                        }
-
-                        var message = (IResponse) Activator.CreateInstance(request.ResponseType)!;
-
-                        if (message is IResponseV2)
-                            _ = messageStream.ReadTaggedFields();
-
-                        message.Read(messageStream);
-
-                        if (messageStream.Length != messageStream.Position)
-                            throw new Exception("Some data was not read from response");
-
-                        request.CompletionSource.TrySetResult(message);
-                    }
-                    finally
-                    {
-                        ArrayPool<byte>.Shared.Return(tmp);
-                    }
+                    this.RespondMessage(new TrackedStream(this.stream), messageSize);
                 }
                 catch (OperationCanceledException)
                 {
                     return;
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void RespondMessage(Stream messageStream, int messageSize)
+        {
+            var correlationId = messageStream.ReadInt32();
+
+            if (!this.pendingRequests.TryRemove(correlationId, out var request))
+            {
+                DiscardMessage(messageStream, messageSize);
+                return;
+            }
+
+            var message = (IResponse) Activator.CreateInstance(request.ResponseType)!;
+
+            if (message is IResponseV2)
+                _ = messageStream.ReadTaggedFields();
+
+            message.Read(messageStream);
+
+            if (messageSize != messageStream.Position)
+                throw new Exception("Some data was not read from response");
+
+            request.CompletionSource.TrySetResult(message);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void DiscardMessage(Stream messageStream, in int messageSize)
+        {
+            messageStream.SkipBytes(messageSize - (int) messageStream.Position);
         }
 
         private async Task<int> WaitForMessageSizeAsync()

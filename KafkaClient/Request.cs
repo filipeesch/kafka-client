@@ -3,7 +3,6 @@ namespace KafkaClient
     using System;
     using System.IO;
     using KafkaClient.Messages;
-    using Microsoft.IO;
 
     public class Request : IRequest
     {
