@@ -1,6 +1,7 @@
 namespace KafkaClient
 {
     using System;
+    using System.Buffers;
     using System.IO;
     using System.Runtime.CompilerServices;
 
@@ -76,11 +77,11 @@ namespace KafkaClient
             if (remaining == 0)
                 return;
 
-            Span<byte> buffer = stackalloc byte[1024];
+            using var buffer = new PooledArray<byte>(1024);
 
             do
             {
-                remaining -= this.stream.Read(buffer.Slice(0, Math.Min(remaining, buffer.Length)));
+                remaining -= this.stream.Read(buffer.Buffer, 0, Math.Min(remaining, buffer.Buffer.Length));
             } while (remaining > 0);
         }
     }
