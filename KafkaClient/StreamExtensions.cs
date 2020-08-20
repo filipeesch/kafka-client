@@ -60,15 +60,6 @@ namespace KafkaClient
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SkipBytes(this Stream destination, int count)
-        {
-            while (--count >= 0)
-            {
-                destination.ReadByte();
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteString(this Stream destination, string value)
         {
             if (value is null)

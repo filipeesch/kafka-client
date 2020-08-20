@@ -47,7 +47,8 @@ namespace KafkaClient
                     if (messageSize <= 0)
                         continue;
 
-                    this.RespondMessage(new TrackedStream(this.stream), messageSize);
+                    using var tracked = new TrackedStream(this.stream, messageSize);
+                    this.RespondMessage(tracked);
                 }
                 catch (OperationCanceledException)
                 {
@@ -57,33 +58,27 @@ namespace KafkaClient
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RespondMessage(Stream messageStream, int messageSize)
+        private void RespondMessage(TrackedStream source)
         {
-            var correlationId = messageStream.ReadInt32();
+            var correlationId = source.ReadInt32();
 
             if (!this.pendingRequests.TryRemove(correlationId, out var request))
             {
-                DiscardMessage(messageStream, messageSize);
+                source.DiscardRemainingData();
                 return;
             }
 
             var message = (IResponse) Activator.CreateInstance(request.ResponseType)!;
 
             if (message is IResponseV2)
-                _ = messageStream.ReadTaggedFields();
+                _ = source.ReadTaggedFields();
 
-            message.Read(messageStream);
+            message.Read(source);
 
-            if (messageSize != messageStream.Position)
+            if (source.Size != source.Position)
                 throw new Exception("Some data was not read from response");
 
             request.CompletionSource.TrySetResult(message);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DiscardMessage(Stream messageStream, in int messageSize)
-        {
-            messageStream.SkipBytes(messageSize - (int) messageStream.Position);
         }
 
         private async Task<int> WaitForMessageSizeAsync()

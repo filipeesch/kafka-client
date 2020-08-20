@@ -65,25 +65,23 @@ namespace KafkaClient
             if (size == 0)
                 return;
 
-            var initialPosition = source.Position;
+            using var tracked = new TrackedStream(source, size);
+            this.BaseOffset = tracked.ReadInt64();
+            this.BatchLength = tracked.ReadInt32();
+            this.PartitionLeaderEpoch = tracked.ReadInt32();
+            this.Magic = (byte) tracked.ReadByte();
+            this.Crc = tracked.ReadInt32();
+            this.Attributes = tracked.ReadInt16();
+            this.LastOffsetDelta = tracked.ReadInt32();
+            this.FirstTimestamp = tracked.ReadInt64();
+            this.MaxTimestamp = tracked.ReadInt64();
+            this.ProducerId = tracked.ReadInt64();
+            this.ProducerEpoch = tracked.ReadInt16();
+            this.BaseSequence = tracked.ReadInt32();
+            this.Records = tracked.ReadArray<Record>();
+            tracked.DiscardRemainingData();
 
-            this.BaseOffset = source.ReadInt64();
-            this.BatchLength = source.ReadInt32();
-            this.PartitionLeaderEpoch = source.ReadInt32();
-            this.Magic = (byte) source.ReadByte();
-            this.Crc = source.ReadInt32();
-            this.Attributes = source.ReadInt16();
-            this.LastOffsetDelta = source.ReadInt32();
-            this.FirstTimestamp = source.ReadInt64();
-            this.MaxTimestamp = source.ReadInt64();
-            this.ProducerId = source.ReadInt64();
-            this.ProducerEpoch = source.ReadInt16();
-            this.BaseSequence = source.ReadInt32();
-            this.Records = source.ReadArray<Record>();
-
-            var bytesRead = (int) (source.Position - initialPosition);
-            source.SkipBytes(size - bytesRead);
-
+            // The code below calculates the CRC32c
             // var size = source.ReadInt32();
             //
             // if (size == 0)

@@ -6,12 +6,36 @@ namespace KafkaClient
 
     public class TrackedStream : Stream
     {
-        private long position = 0;
         private readonly Stream stream;
+        private long position;
 
-        public TrackedStream(Stream stream)
+        public TrackedStream(Stream stream, int size)
         {
+            this.Size = size;
             this.stream = stream;
+        }
+
+        public int Size { get; }
+
+        public override bool CanRead => this.stream.CanRead;
+
+        public override bool CanSeek => this.stream.CanSeek;
+
+        public override bool CanWrite => this.stream.CanWrite;
+
+        public override long Length => this.stream.Length;
+
+        public override long Position
+        {
+            get => this.position;
+            set => throw new NotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void MovePosition(long offset)
+        {
+            if ((this.position += offset) > this.Size)
+                throw new ArgumentOutOfRangeException(nameof(this.Position), "The stream size can't be exceeded");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -20,14 +44,14 @@ namespace KafkaClient
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int Read(byte[] buffer, int offset, int count)
         {
-            this.position += count;
+            this.MovePosition(count);
             return this.stream.Read(buffer, offset, count);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override long Seek(long offset, SeekOrigin origin)
         {
-            this.position += offset;
+            this.MovePosition(offset);
             return this.stream.Seek(offset, origin);
         }
 
@@ -40,19 +64,24 @@ namespace KafkaClient
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void Write(byte[] buffer, int offset, int count)
         {
-            this.position += count;
+            this.MovePosition(count);
             this.stream.Write(buffer, offset, count);
         }
 
-        public override bool CanRead => this.stream.CanRead;
-        public override bool CanSeek => this.stream.CanSeek;
-        public override bool CanWrite => this.stream.CanWrite;
-        public override long Length => this.stream.Length;
-
-        public override long Position
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DiscardRemainingData()
         {
-            get => this.position;
-            set => throw new NotSupportedException();
+            var remaining = (int) (this.Size - this.Position);
+
+            if (remaining == 0)
+                return;
+
+            Span<byte> buffer = stackalloc byte[1024];
+
+            do
+            {
+                remaining -= this.stream.Read(buffer.Slice(0, Math.Min(remaining, buffer.Length)));
+            } while (remaining > 0);
         }
     }
 }
