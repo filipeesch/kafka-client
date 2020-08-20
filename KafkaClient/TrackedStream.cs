@@ -81,7 +81,7 @@ namespace KafkaClient
 
             do
             {
-                remaining -= this.stream.Read(buffer.Buffer, 0, Math.Min(remaining, buffer.Buffer.Length));
+                remaining -= this.stream.Read(buffer, 0, Math.Min(remaining, buffer.Length));
             } while (remaining > 0);
         }
     }
